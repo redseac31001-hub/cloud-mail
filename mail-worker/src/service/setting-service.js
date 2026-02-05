@@ -9,13 +9,25 @@ import BizError from '../error/biz-error';
 import {t} from '../i18n/i18n'
 import verifyRecordService from './verify-record-service';
 
+function assertKvBound(env) {
+	const kv = env?.kv;
+	if (!kv || typeof kv.get !== 'function' || typeof kv.put !== 'function') {
+		throw new BizError(
+			'KV数据库未绑定或被同名变量覆盖：请在 Worker 绑定 KV Namespace（绑定名必须为 kv），并确保 Variables/Secrets 中没有名为 kv 的变量/密钥。 KV database not bound/overridden: bind KV Namespace as `kv` and remove any variable/secret named `kv`.',
+			502
+		);
+	}
+	return kv;
+}
+
 const settingService = {
 
 	async refresh(c) {
 		const settingRow = await orm(c).select().from(setting).get();
 		settingRow.resendTokens = JSON.parse(settingRow.resendTokens);
 		c.set('setting', settingRow);
-		await c.env.kv.put(KvConst.SETTING, JSON.stringify(settingRow));
+		const kv = assertKvBound(c.env);
+		await kv.put(KvConst.SETTING, JSON.stringify(settingRow));
 	},
 
 	async query(c) {
@@ -24,7 +36,8 @@ const settingService = {
 			return c.get('setting')
 		}
 
-		const setting = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
+		const kv = assertKvBound(c.env);
+		const setting = await kv.get(KvConst.SETTING, { type: 'json' });
 
 		if (!setting) {
 			throw new BizError('数据库未初始化 Database not initialized.');

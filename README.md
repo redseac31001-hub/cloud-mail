@@ -38,6 +38,7 @@
 
 - [在线演示](https://skymail.ink)<br>
 - [部署文档](https://doc.skymail.ink)<br>
+- [Cloudflare 部署与配置指南（逐步）](doc/cloudflare-deploy.md)<br>
 - [邮箱级转发配置指南](doc/mailbox-forwarding.md)<br>
 
 | ![](/doc/demo/demo1.png) | ![](/doc/demo/demo2.png) |

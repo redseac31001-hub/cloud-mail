@@ -35,6 +35,8 @@ With only one domain, you can create multiple different email addresses, similar
 
 - [Live Demo](https://skymail.ink)<br>
 - [Deployment Guide](https://doc.skymail.ink/en/)<br>
+- [Cloudflare Deploy & Config Guide (step-by-step)](doc/cloudflare-deploy.md)<br>
+- [Mailbox-level Forwarding Guide](doc/mailbox-forwarding.md)<br>
 
 
 | ![](/doc/demo/demo1.png) | ![](/doc/demo/demo2.png) |

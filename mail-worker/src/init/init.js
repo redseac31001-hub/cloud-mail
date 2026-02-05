@@ -42,20 +42,19 @@ const dbInit = {
 	},
 
 	async v3_0DB(c) {
-		const ADD_COLUMN_SQL_LIST = [
-			`ALTER TABLE account ADD COLUMN forward_email TEXT NOT NULL DEFAULT '';`,
-			`ALTER TABLE account ADD COLUMN forward_status INTEGER NOT NULL DEFAULT 1;`
-		];
+		const { results } = await c.env.db
+			.prepare(`SELECT name FROM pragma_table_info('account')`)
+			.all();
 
-		const promises = ADD_COLUMN_SQL_LIST.map(async (sql) => {
-			try {
-				await c.env.db.prepare(sql).run();
-			} catch (e) {
-				console.warn(`skip column: ${e.message}`);
-			}
-		});
+		const columnNames = new Set((results || []).map((row) => row.name));
 
-		await Promise.all(promises);
+		if (!columnNames.has('forward_email')) {
+			await c.env.db.prepare(`ALTER TABLE account ADD COLUMN forward_email TEXT NOT NULL DEFAULT '';`).run();
+		}
+
+		if (!columnNames.has('forward_status')) {
+			await c.env.db.prepare(`ALTER TABLE account ADD COLUMN forward_status INTEGER NOT NULL DEFAULT 1;`).run();
+		}
 	},
 
 	async v2_8DB(c) {

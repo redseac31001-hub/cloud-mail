@@ -178,7 +178,11 @@ export async function email(message, env, ctx) {
 
 		//转发到TG
 		if (tgBotStatus === settingConst.tgBotStatus.OPEN && tgChatId) {
-			await telegramService.sendEmailToBot({ env }, emailRow)
+			try {
+				await telegramService.sendEmailToBot({ env }, emailRow)
+			} catch (e) {
+				console.error(`转发 TG 失败：`, e);
+			}
 		}
 
 		//转发到其他邮箱
@@ -214,7 +218,25 @@ export async function email(message, env, ctx) {
 
 	} catch (e) {
 		console.error('邮件接收异常: ', e);
-		throw e
+
+		if (e?.name === 'BizError') {
+			message.setReject(e.message);
+			return;
+		}
+
+		const msg = String(e?.message || e);
+
+		if (msg === `Cannot read properties of undefined (reading 'prepare')` || /\.env\.db\.\w+ is not a function/.test(msg)) {
+			message.setReject('D1数据库未绑定或被同名变量覆盖 D1 database not bound/overridden');
+			return;
+		}
+
+		if (msg === `Cannot read properties of undefined (reading 'get')` || msg === `Cannot read properties of undefined (reading 'put')` || /\.env\.kv\.\w+ is not a function/.test(msg)) {
+			message.setReject('KV数据库未绑定或被同名变量覆盖 KV database not bound/overridden');
+			return;
+		}
+
+		throw e;
 	}
 }
 
