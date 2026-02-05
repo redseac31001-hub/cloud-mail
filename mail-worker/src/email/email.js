@@ -20,8 +20,8 @@ export async function email(message, env, ctx) {
 			receive,
 			tgChatId,
 			tgBotStatus,
-			forwardStatus,
-			forwardEmail,
+			forwardStatus: globalForwardStatus,
+			forwardEmail: globalForwardEmail,
 			ruleEmail,
 			ruleType,
 			r2Domain,
@@ -164,9 +164,13 @@ export async function email(message, env, ctx) {
 
 		if (ruleType === settingConst.ruleType.RULE) {
 
-			const emails = ruleEmail.split(',');
+			const recipient = String(message.to || '').trim().toLowerCase();
+			const emails = String(ruleEmail || '')
+				.split(',')
+				.map(item => item.trim().toLowerCase())
+				.filter(Boolean);
 
-			if (!emails.includes(message.to)) {
+			if (!emails.includes(recipient)) {
 				return;
 			}
 
@@ -178,9 +182,23 @@ export async function email(message, env, ctx) {
 		}
 
 		//转发到其他邮箱
-		if (forwardStatus === settingConst.forwardStatus.OPEN && forwardEmail) {
+		if (globalForwardStatus === settingConst.forwardStatus.OPEN) {
 
-			const emails = forwardEmail.split(',');
+			let targets = '';
+
+			if (
+				account &&
+				account.isDel === isDel.NORMAL &&
+				account.forwardStatus === settingConst.forwardStatus.OPEN &&
+				account.forwardEmail
+			) {
+				targets = account.forwardEmail;
+			} else {
+				targets = globalForwardEmail || '';
+			}
+
+			const emails = Array.from(new Set(targets.split(',').map(item => item.trim()).filter(Boolean)));
+			if (emails.length === 0) return;
 
 			await Promise.all(emails.map(async email => {
 

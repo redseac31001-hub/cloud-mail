@@ -217,6 +217,45 @@ const accountService = {
 		await orm(c).update(account).set({name}).where(and(eq(account.userId, userId),eq(account.accountId, accountId))).run();
 	},
 
+	async setForward(c, params, userId) {
+		let { accountId, forwardStatus, forwardEmail } = params;
+
+		accountId = Number(accountId);
+		if (!accountId || Number.isNaN(accountId)) {
+			throw new BizError('accountId required');
+		}
+
+		const accountRow = await this.selectById(c, accountId);
+		if (!accountRow || accountRow.userId !== userId) {
+			throw new BizError(t('noUserAccount'));
+		}
+
+		forwardStatus = Number(forwardStatus);
+		if (forwardStatus !== settingConst.forwardStatus.OPEN && forwardStatus !== settingConst.forwardStatus.CLOSE) {
+			forwardStatus = settingConst.forwardStatus.CLOSE;
+		}
+
+		const raw = forwardEmail === null || forwardEmail === undefined ? '' : String(forwardEmail);
+		const emails = raw
+			.split(',')
+			.map(item => item.trim())
+			.filter(Boolean);
+
+		for (const email of emails) {
+			if (!verifyUtils.isEmail(email)) {
+				throw new BizError(t('notEmail'));
+			}
+		}
+
+		const normalized = emails.join(',');
+
+		await orm(c)
+			.update(account)
+			.set({ forwardStatus, forwardEmail: normalized })
+			.where(and(eq(account.userId, userId), eq(account.accountId, accountId)))
+			.run();
+	},
+
 	async allAccount(c, params) {
 
 		let { userId, num, size } = params

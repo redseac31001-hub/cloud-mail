@@ -10,6 +10,8 @@ export const account = sqliteTable('account', {
 	userId: integer('user_id').notNull(),
 	allReceive: integer('all_receive').default(0).notNull(),
 	sort: integer('sort').default(0).notNull(),
+	forwardEmail: text('forward_email').default('').notNull(),
+	forwardStatus: integer('forward_status').default(1).notNull(),
 	isDel: integer('is_del').default(0).notNull(),
 });
 export default account

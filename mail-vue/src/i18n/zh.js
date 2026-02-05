@@ -156,6 +156,7 @@ const zh = {
     disable: '关闭',
     disabled: '已关闭',
     otherEmail: '第三方邮箱',
+    forwardSetting: '转发设置',
     forwardingRules: '转发规则',
     forwardAll: '全部转发',
     rules: '规则转发',

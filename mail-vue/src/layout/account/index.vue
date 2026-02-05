@@ -24,6 +24,7 @@
                 <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"/>
                 <template #dropdown>
                   <el-dropdown-menu>
+                    <el-dropdown-item @click="openForward(item)">{{ $t('forwardSetting') }}</el-dropdown-item>
                     <el-dropdown-item v-if="hasPerm('email:send')" @click="openSetName(item)">{{ $t('rename') }}</el-dropdown-item>
                     <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId" @click="setAsTop(item, index)">{{ $t('pin') }}</el-dropdown-item>
                     <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId && hasPerm('account:delete')"
@@ -123,6 +124,22 @@
         </el-button>
       </div>
     </el-dialog>
+    <el-dialog v-model="forwardShow" :title="$t('forwardSetting')" @closed="resetForward">
+      <div class="container">
+        <div style="font-size: 12px;opacity: 0.8;margin-bottom: 10px">{{ $t('otherEmailDesc') }}</div>
+        <el-input-tag tag-type="warning" :placeholder="$t('otherEmailInputDesc')" v-model="forwardEmail"
+                      @add-tag="forwardEmailAddTag"></el-input-tag>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-switch v-model="forwardStatus" :active-value="0" :inactive-value="1" :active-text="$t('enable')"
+                     :inactive-text="$t('disable')"/>
+          <el-button :loading="forwardLoading" type="primary" @click="saveForward">
+            {{ $t('save') }}
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 <script setup>
@@ -133,6 +150,7 @@ import {
   accountAdd,
   accountDelete,
   accountSetName,
+  accountSetForward,
   accountSetAllReceive,
   accountSetAsTop
 } from "@/request/account.js";
@@ -162,9 +180,14 @@ const verifyShow = ref(false)
 const setNameShow = ref(false)
 const setNameLoading = ref(false)
 const accountName = ref(null)
+const forwardShow = ref(false)
+const forwardLoading = ref(false)
+const forwardEmail = ref([])
+const forwardStatus = ref(1)
 const addRef = ref({})
 const scrollbarRef = ref({})
 let account = null
+let forwardAccount = null
 let turnstileId = null
 const botJsError = ref(false)
 let verifyToken = ''
@@ -264,6 +287,52 @@ function openSetName(accountItem) {
   setNameShow.value = true
 }
 
+function resetForward() {
+  forwardAccount = null
+  forwardEmail.value = []
+  forwardStatus.value = 1
+}
+
+function openForward(accountItem) {
+  forwardAccount = accountItem
+  forwardEmail.value = []
+  forwardStatus.value = Number(accountItem?.forwardStatus ?? 1)
+  if (accountItem?.forwardEmail) {
+    const list = String(accountItem.forwardEmail)
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+    forwardEmail.value.push(...list)
+  }
+  forwardShow.value = true
+}
+
+function forwardEmailAddTag(val) {
+  forwardEmail.value.splice(forwardEmail.value.length - 1, 1)
+  const email = String(val || '').trim()
+  if (isEmail(email) && !forwardEmail.value.includes(email)) {
+    forwardEmail.value.push(email)
+  }
+}
+
+function saveForward() {
+  if (!forwardAccount) return
+  forwardLoading.value = true
+  const emailStr = forwardEmail.value.join(',')
+  accountSetForward(forwardAccount.accountId, forwardStatus.value, emailStr).then(() => {
+    forwardAccount.forwardStatus = forwardStatus.value
+    forwardAccount.forwardEmail = emailStr
+    ElMessage({
+      message: t('setSuccess'),
+      type: 'success',
+      plain: true,
+    })
+    forwardShow.value = false
+  }).finally(() => {
+    forwardLoading.value = false
+  })
+}
+
 function setAllReceive(account) {
   let allReceiveAccount = accounts.find(account => account.allReceive === AccountAllReceiveEnum.ENABLED);
   if (allReceiveAccount && allReceiveAccount.accountId !== account.accountId) allReceiveAccount.allReceive = AccountAllReceiveEnum.DISABLED;
@@ -287,7 +356,9 @@ function setAllReceive(account) {
 
 
 function showNullSetting(item) {
-  return !hasPerm('email:send') && !(item.accountId !== userStore.user.account.accountId && hasPerm('account:delete'))
+  return !hasPerm('email:send')
+      && !(item.accountId !== userStore.user.account.accountId && hasPerm('account:delete'))
+      && !hasPerm('account:query')
 }
 
 function itemBg(accountId) {

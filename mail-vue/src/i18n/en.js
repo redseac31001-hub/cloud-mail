@@ -156,6 +156,7 @@ const en = {
     disable: 'Disable',
     disabled: 'Disabled',
     otherEmail: 'Forwarding to External Email',
+    forwardSetting: 'Forwarding',
     forwardingRules: 'Forwarding Rules',
     forwardAll: 'All',
     rules: 'Rules',
